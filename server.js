@@ -249,7 +249,7 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
 #val-overlay.show{display:flex}
 .ov-ball{width:clamp(160px,22vw,220px);height:clamp(160px,22vw,220px);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;font-weight:900;color:#fff;box-shadow:inset -12px -12px 24px rgba(0,0,0,.25),inset 6px 6px 14px rgba(255,255,255,.22),0 12px 40px rgba(0,0,0,.4);animation:ballIn .5s cubic-bezier(.34,1.56,.64,1);}
 @keyframes ballIn{from{transform:scale(0) translateY(-40px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
-.ov-val-text{font-size:clamp(24px,4vw,38px);line-height:1.15;word-break:break-word}
+.ov-val-text{font-size:clamp(18px,3.5vw,38px);line-height:1.2;word-break:normal;overflow-wrap:anywhere;hyphens:none;}
 .ov-title{font-size:clamp(13px,1.5vw,18px);color:rgba(255,255,255,.7);font-weight:600;letter-spacing:.5px}
 .ov-hint{font-size:13px;color:rgba(255,255,255,.45);font-weight:500;margin-top:8px}
 .ov-close{padding:10px 28px;border-radius:10px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;}
