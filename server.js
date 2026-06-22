@@ -1030,7 +1030,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f2f7;color:#1a1a3e;m
 .board-label{font-size:9px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#aaa;margin-bottom:8px;width:100%;padding-left:2px}
 #board{
   display:grid;grid-template-columns:repeat(3,1fr);
-  gap:8px;width:100%;max-width:360px;
+  gap:6px;width:100%;
 }
 .cell{
   aspect-ratio:1;border-radius:14px;
@@ -1038,12 +1038,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f2f7;color:#1a1a3e;m
   border:2px solid #e4e8f2;
   border-bottom:4px solid #d0d8ee;
   display:flex;align-items:center;justify-content:center;
-  text-align:center;padding:10px 6px;
-  font-size:clamp(12px,4vw,15px);font-weight:800;
+  text-align:center;padding:4px;
+  font-size:clamp(9px,3.2vw,13px);font-weight:800;
   color:#1a1a3e;cursor:pointer;
-  transition:all .18s;word-break:break-word;line-height:1.25;
+  transition:all .18s;
+  overflow-wrap:break-word;hyphens:auto;line-height:1.15;
   user-select:none;-webkit-tap-highlight-color:transparent;
   box-shadow:0 3px 8px rgba(0,0,0,.07);
+  overflow:hidden;
 }
 .cell:active{transform:scale(.88);box-shadow:none}
 .cell.marked{
@@ -1057,7 +1059,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f2f7;color:#1a1a3e;m
   border-color:#d4ac0d;border-bottom-color:#a88400;
   color:#fff;cursor:default;
   box-shadow:0 4px 14px rgba(212,172,13,.3);
-  font-size:clamp(14px,4.5vw,18px);
+  font-size:clamp(12px,4vw,16px);
 }
 .cell.winning{
   background:linear-gradient(135deg,#1a7a3c,#27ae60) !important;
@@ -1199,9 +1201,10 @@ function renderBoard(){
   const winning=new Set();
   LINES.filter(l=>l.every(i=>m[i])).forEach(l=>l.forEach(i=>winning.add(i)));
   document.getElementById('board').innerHTML=board.map((v,i)=>{
-    if(v==='LIBRE')return '<div class="cell free">⭐<br/>LIBRE</div>';
+    if(v==='LIBRE')return '<div class="cell free">⭐ LIBRE</div>';
     const cls='cell'+(marks[i]?' marked':'')+(winning.has(i)?' winning':'');
-    return '<div class="'+cls+'" onclick="mark('+i+')">'+esc(v)+'</div>';
+    const fs=v.length>12?'clamp(7px,2.4vw,10px)':v.length>8?'clamp(8px,2.8vw,12px)':'clamp(9px,3.2vw,13px)';
+    return '<div class="'+cls+'" onclick="mark('+i+')" style="font-size:'+fs+'">'+esc(v)+'</div>';
   }).join('');
   if(winning.size>0&&!document.getElementById('bingo-msg').textContent.includes('ganó'))
     document.getElementById('bingo-msg').textContent='¡Línea completa! Grita BINGO 🎉';
