@@ -181,7 +181,7 @@ const HTML_BALOTERA = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Balotera Socioemocional · 27 Jun 2026</title>
+<title>Bingo Habilidades Socioemocionales · 27 Jun 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -305,12 +305,11 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
   <div class="logo-area">
     <div class="logo-icon">🎱</div>
     <div class="logo-text">
-      <h1>Balotera Socioemocional</h1>
+      <h1>Bingo Habilidades Socioemocionales</h1>
       <p>Reunión Equipos Zonales · <span>27 Jun 2026</span></p>
     </div>
   </div>
   <div class="header-btns">
-    <button class="btn-hdr" onclick="document.getElementById('bingo-modal').classList.add('show');setTimeout(()=>document.getElementById('bingo-name-input').focus(),100)">🏆 Registrar BINGO</button>
     <button class="btn-hdr" onclick="resetGame()">↺ Reiniciar</button>
   </div>
 </header>
@@ -640,7 +639,7 @@ header{
   <div class="logo-area">
     <div class="logo-icon">🎱</div>
     <div class="logo-text">
-      <h1>Balotera Socioemocional</h1>
+      <h1>Bingo Habilidades Socioemocionales</h1>
       <p>Vista del presentador · <span id="conn-count">0</span> participantes</p>
     </div>
   </div>
