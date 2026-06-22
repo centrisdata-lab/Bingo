@@ -288,7 +288,7 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
   <div class="w-emoji">🎉</div>
   <div class="w-title">¡BINGO!</div>
   <div class="w-winner-name" id="w-winner-name">¡Alguien ganó!</div>
-  <div class="w-sub">Pídele que comparta algo sobre sí mismo</div>
+  <div class="w-sub">🎁 ¡Has ganado un premio!</div>
   <button class="btn-cont" onclick="document.getElementById('winner-overlay').classList.remove('show')">Continuar →</button>
 </div>
 <div id="bingo-modal">
@@ -399,6 +399,52 @@ function applyServerState(s){calledValues=s.calledValues||[];winners=s.winners||
 const cc=document.getElementById('confetti-canvas');const ccx=cc.getContext('2d');
 function launchConfetti(){cc.width=innerWidth;cc.height=innerHeight;const ps=Array.from({length:200},()=>({x:Math.random()*cc.width,y:-10,w:7+Math.random()*9,h:3+Math.random()*5,color:['#f5c200','#1e88e5','#0d1b6e','#27ae60','#e53935','#8e44ad'][Math.floor(Math.random()*6)],speed:2.5+Math.random()*4,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.18,drift:(Math.random()-.5)*2}));(function loop(){ccx.clearRect(0,0,cc.width,cc.height);const r=ps.filter(p=>p.y<cc.height+20);r.forEach(p=>{p.y+=p.speed;p.x+=p.drift;p.angle+=p.spin;ccx.save();ccx.translate(p.x,p.y);ccx.rotate(p.angle);ccx.fillStyle=p.color;ccx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ccx.restore();});if(r.length)requestAnimationFrame(loop);else ccx.clearRect(0,0,cc.width,cc.height);})();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Audio ────────────────────────────────────────────────
+const AC=new (window.AudioContext||window.webkitAudioContext)();
+function resumeAC(){if(AC.state==='suspended')AC.resume();}
+
+function soundSpin(){
+  resumeAC();
+  const t=AC.currentTime;
+  // Clicks acelerados simulando ruleta girando
+  for(let i=0;i<28;i++){
+    const o=AC.createOscillator(),g=AC.createGain();
+    const delay=i*0.065*(1-i/50);
+    o.type='triangle';
+    o.frequency.setValueAtTime(380+Math.random()*120,t+delay);
+    g.gain.setValueAtTime(0,t+delay);
+    g.gain.linearRampToValueAtTime(0.18,t+delay+0.01);
+    g.gain.linearRampToValueAtTime(0,t+delay+0.04);
+    o.connect(g);g.connect(AC.destination);
+    o.start(t+delay);o.stop(t+delay+0.06);
+  }
+}
+
+function soundWin(){
+  resumeAC();
+  const t=AC.currentTime;
+  // Fanfarria: acorde ascendente festivo
+  [[523,0],[659,0.12],[784,0.24],[1047,0.38],[1319,0.52]].forEach(([freq,delay])=>{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type='sine';o.frequency.value=freq;
+    g.gain.setValueAtTime(0,t+delay);
+    g.gain.linearRampToValueAtTime(0.22,t+delay+0.06);
+    g.gain.linearRampToValueAtTime(0.18,t+delay+0.18);
+    g.gain.linearRampToValueAtTime(0,t+delay+0.55);
+    o.connect(g);g.connect(AC.destination);
+    o.start(t+delay);o.stop(t+delay+0.6);
+  });
+  // Brillo final
+  const o2=AC.createOscillator(),g2=AC.createGain();
+  o2.type='sine';o2.frequency.value=1568;
+  g2.gain.setValueAtTime(0,t+0.7);
+  g2.gain.linearRampToValueAtTime(0.15,t+0.78);
+  g2.gain.linearRampToValueAtTime(0,t+1.1);
+  o2.connect(g2);g2.connect(AC.destination);
+  o2.start(t+0.7);o2.stop(t+1.2);
+}
+
 let ws;
 function conectar(){
   const proto=location.protocol==='https:'?'wss':'ws';
@@ -407,7 +453,7 @@ function conectar(){
   ws.onmessage=e=>{
     let m;try{m=JSON.parse(e.data);}catch{return;}
     if(m.type==='state'){applyServerState(m);}
-    else if(m.type==='spinning'){isSpinning=true;document.getElementById('btn-spin').disabled=true;document.getElementById('cur-val').textContent='Girando...';}
+    else if(m.type==='spinning'){isSpinning=true;document.getElementById('btn-spin').disabled=true;document.getElementById('cur-val').textContent='Girando...';soundSpin();}
     else if(m.type==='value_called'){
       const val=m.value;calledValues=m.calledValues;isSpinning=false;
       document.getElementById('cur-val').textContent=val;
@@ -418,7 +464,7 @@ function conectar(){
       animFlyBall(color,val,()=>{showStandBall(val,color);showValOverlay(val,color);});
       document.getElementById('btn-spin').disabled=false;
     }
-    else if(m.type==='bingo_winner'){winners=m.winners;renderWinners();document.getElementById('w-winner-name').textContent=m.name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();}
+    else if(m.type==='bingo_winner'){winners=m.winners;renderWinners();document.getElementById('w-winner-name').textContent=m.name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();soundWin();}
     else if(m.type==='player_joined'||m.type==='player_left'){/* state update follows */}
   };
   ws.onclose=()=>setTimeout(conectar,2000);
@@ -1170,7 +1216,7 @@ function connect(){
       setValDisplay(m.value);
       document.getElementById('called-chips').innerHTML=m.calledValues.map(v=>'<span class="chip">'+esc(v)+'</span>').join('');
     }
-    if(m.type==='bingo_winner')document.getElementById('bingo-msg').textContent='🏆 ¡'+esc(m.name)+' ganó!';
+    if(m.type==='bingo_winner'){const msg=document.getElementById('bingo-msg');msg.style.color='#27ae60';msg.textContent='🏆 ¡Has ganado un premio!';soundWinPlayer();}
     if(m.type==='bingo_invalid'){
       const msg=document.getElementById('bingo-msg');
       msg.style.color='#e53935';
@@ -1231,6 +1277,20 @@ function setConn(ok){
   el.className=ok?'ok':'err';
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const PAC=new (window.AudioContext||window.webkitAudioContext)();
+function soundWinPlayer(){
+  if(PAC.state==='suspended')PAC.resume();
+  const t=PAC.currentTime;
+  [[523,0],[659,0.12],[784,0.24],[1047,0.38],[1319,0.52]].forEach(([freq,delay])=>{
+    const o=PAC.createOscillator(),g=PAC.createGain();
+    o.type='sine';o.frequency.value=freq;
+    g.gain.setValueAtTime(0,t+delay);
+    g.gain.linearRampToValueAtTime(0.25,t+delay+0.06);
+    g.gain.linearRampToValueAtTime(0,t+delay+0.55);
+    o.connect(g);g.connect(PAC.destination);
+    o.start(t+delay);o.stop(t+delay+0.6);
+  });
+}
 document.getElementById('name-in').addEventListener('keydown',e=>{if(e.key==='Enter')join();});
 connect();
 </script>
