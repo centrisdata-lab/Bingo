@@ -17,6 +17,7 @@ const state = {
 let wsCounter = 0;
 
 app.use(express.json());
+app.use(express.static(__dirname));
 app.get('/',            (_req, res) => res.send(HTML_BALOTERA));
 app.get('/presentador', (_req, res) => res.send(HTML_PRESENTER));
 app.get('/jugar',       (_req, res) => res.send(HTML_PLAYER));
@@ -315,7 +316,10 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
 </header>
 <div class="main">
   <div class="left">
-    <canvas id="bombo-canvas"></canvas>
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;flex-shrink:1;min-height:0">
+      <img src="/Hormy.png" alt="Hormy" style="position:absolute;left:0;bottom:0;height:clamp(80px,14vh,160px);object-fit:contain;z-index:2;pointer-events:none;filter:drop-shadow(2px 4px 8px rgba(0,0,0,.15))"/>
+      <canvas id="bombo-canvas"></canvas>
+    </div>
     <div class="output-row">
       <div class="val-card">
         <div class="vc-label">● Valor en juego</div>
