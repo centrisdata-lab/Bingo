@@ -374,7 +374,7 @@ function animFlyBall(color,value,onDone){const W=BC.width,H=BC.height,cx=W*.43,c
 function mainLoop(ts){const dt=(ts-lastT)/1000;lastT=ts;drumAngle+=isSpinning?dt*4.6:dt*.32;drawScene(ts/1000);requestAnimationFrame(mainLoop);}
 requestAnimationFrame(mainLoop);
 function showStandBall(value,color){const sb=document.getElementById('stand-ball');sb.classList.remove('show');sb.style.background='radial-gradient(circle at 35% 35%,rgba(255,255,255,.45),'+color+')';const words=value.split(' ');sb.innerHTML=words.map(w=>'<span style="display:block;font-size:'+(words.length>1?'7.5px':'9.5px')+';line-height:1.25;font-weight:900">'+esc(w)+'</span>').join('');document.getElementById('ball-slot').classList.add('has-ball');document.getElementById('arrow-out').style.opacity='1';setTimeout(()=>sb.classList.add('show'),60);}
-function spin(){if(isSpinning)return;const left=VALUES.filter(v=>!calledValues.includes(v));if(!left.length){alert('¡Ya salieron todos los valores!');return;}isSpinning=true;document.getElementById('btn-spin').disabled=true;setTimeout(()=>{const val=left[Math.floor(Math.random()*left.length)];calledValues.push(val);isSpinning=false;document.getElementById('cur-val').textContent=val;document.getElementById('count-num').textContent=calledValues.length;document.getElementById('progress-bar').style.width=(calledValues.length/24*100)+'%';renderChips();renderHistList();const idx=VALUES.indexOf(val);const color=BALL_COLORS[idx%BALL_COLORS.length];animFlyBall(color,val,()=>{showStandBall(val,color);showValOverlay(val,color);});document.getElementById('btn-spin').disabled=false;},4000);}
+function spin(){if(isSpinning)return;ws&&ws.readyState===1&&ws.send(JSON.stringify({type:'spin'}));}
 function showValOverlay(value,color){const ball=document.getElementById('ov-ball');ball.style.background='radial-gradient(circle at 35% 35%,rgba(255,255,255,.38),'+color+')';ball.style.boxShadow='inset -12px -12px 24px rgba(0,0,0,.25),inset 6px 6px 14px rgba(255,255,255,.18),0 12px 40px '+color+'88';document.getElementById('ov-val-text').textContent=value;document.getElementById('val-overlay').classList.add('show');}
 function closeValOverlay(){document.getElementById('val-overlay').classList.remove('show');}
 function renderChips(){const latest=calledValues[calledValues.length-1];document.getElementById('called-wrap').innerHTML=calledValues.map(v=>'<span class="chip'+(v===latest?' latest':'')+'">'+esc(v)+'</span>').join('');}
@@ -382,10 +382,35 @@ function renderHistList(){const el=document.getElementById('hist-list');if(!call
 function renderWinners(){const el=document.getElementById('winners-list');if(!winners.length){el.innerHTML='<span style="font-size:12px;color:#ccc;font-weight:500">Nadie ha ganado aún</span>';return;}el.innerHTML=winners.map(w=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:#f0fdf4;border-left:3px solid #27ae60;font-size:13px;font-weight:700;color:#1a1a3e"><span style="font-size:16px">🏆</span> '+esc(w)+'</div>').join('');}
 function confirmBingo(){const name=document.getElementById('bingo-name-input').value.trim()||'Un participante';document.getElementById('bingo-modal').classList.remove('show');winners.push(name);renderWinners();document.getElementById('w-winner-name').textContent=name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();}
 document.getElementById('bingo-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')confirmBingo();if(e.key==='Escape')document.getElementById('bingo-modal').classList.remove('show');});
-function resetGame(){if(!confirm('¿Reiniciar el juego? Se borrará el progreso.'))return;calledValues=[];winners=[];document.getElementById('cur-val').textContent='¡Gira la balotera!';document.getElementById('called-wrap').innerHTML='';document.getElementById('count-num').textContent='0';document.getElementById('progress-bar').style.width='0%';document.getElementById('stand-ball').classList.remove('show');document.getElementById('ball-slot').classList.remove('has-ball');document.getElementById('arrow-out').style.opacity='0';renderHistList();renderWinners();FLOAT_BALLS.forEach(b=>{b.vx=(Math.random()-.5)*1.2;b.vy=(Math.random()-.5)*1.2;});}
+function resetGame(){if(!confirm('¿Reiniciar el juego? Se borrará el progreso.'))return;ws&&ws.readyState===1&&ws.send(JSON.stringify({type:'reset'}));}
+function applyServerState(s){calledValues=s.calledValues||[];winners=s.winners||[];isSpinning=!!s.spinning;document.getElementById('count-num').textContent=calledValues.length;document.getElementById('progress-bar').style.width=(calledValues.length/24*100)+'%';renderChips();renderHistList();renderWinners();if(s.currentValue){const idx=VALUES.indexOf(s.currentValue);const col=BALL_COLORS[idx%BALL_COLORS.length];document.getElementById('cur-val').textContent=s.currentValue;showStandBall(s.currentValue,col);}document.getElementById('btn-spin').disabled=isSpinning;}
 const cc=document.getElementById('confetti-canvas');const ccx=cc.getContext('2d');
 function launchConfetti(){cc.width=innerWidth;cc.height=innerHeight;const ps=Array.from({length:200},()=>({x:Math.random()*cc.width,y:-10,w:7+Math.random()*9,h:3+Math.random()*5,color:['#f5c200','#1e88e5','#0d1b6e','#27ae60','#e53935','#8e44ad'][Math.floor(Math.random()*6)],speed:2.5+Math.random()*4,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.18,drift:(Math.random()-.5)*2}));(function loop(){ccx.clearRect(0,0,cc.width,cc.height);const r=ps.filter(p=>p.y<cc.height+20);r.forEach(p=>{p.y+=p.speed;p.x+=p.drift;p.angle+=p.spin;ccx.save();ccx.translate(p.x,p.y);ccx.rotate(p.angle);ccx.fillStyle=p.color;ccx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ccx.restore();});if(r.length)requestAnimationFrame(loop);else ccx.clearRect(0,0,cc.width,cc.height);})();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let ws;
+function conectar(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(proto+'://'+location.host);
+  ws.onopen=()=>ws.send(JSON.stringify({type:'set_role',role:'presenter'}));
+  ws.onmessage=e=>{
+    let m;try{m=JSON.parse(e.data);}catch{return;}
+    if(m.type==='state'){applyServerState(m);}
+    else if(m.type==='spinning'){isSpinning=true;document.getElementById('btn-spin').disabled=true;document.getElementById('cur-val').textContent='Girando...';}
+    else if(m.type==='value_called'){
+      const val=m.value;calledValues=m.calledValues;isSpinning=false;
+      document.getElementById('cur-val').textContent=val;
+      document.getElementById('count-num').textContent=calledValues.length;
+      document.getElementById('progress-bar').style.width=(calledValues.length/24*100)+'%';
+      renderChips();renderHistList();
+      const idx=VALUES.indexOf(val);const color=BALL_COLORS[idx%BALL_COLORS.length];
+      animFlyBall(color,val,()=>{showStandBall(val,color);showValOverlay(val,color);});
+      document.getElementById('btn-spin').disabled=false;
+    }
+    else if(m.type==='bingo_winner'){winners=m.winners;renderWinners();document.getElementById('w-winner-name').textContent=m.name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();}
+  };
+  ws.onclose=()=>setTimeout(conectar,2000);
+}
+conectar();
 </script>
 </body>
 </html>`;
