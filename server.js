@@ -130,12 +130,12 @@ wss.on('connection', ws => {
 });
 
 const VALUES = [
-  'Compromiso','Dedicación','Lealtad','Constancia',
+  'Compromiso','Solidaridad','Lealtad','Constancia',
   'Perseverancia','Resiliencia','Fortaleza','Superación',
   'Responsabilidad','Integridad','Puntualidad','Honestidad',
-  'Liderazgo','Inspiración','Servicio','Visión',
+  'Liderazgo','Inspiración','Servicio','Tolerancia',
   'Empatía','Gratitud','Colaboración','Creatividad',
-  'Respeto','Comunicación','Confianza','Esperanza',
+  'Respeto','Comunicación','Justicia y equidad','Esperanza',
 ];
 
 const BALL_COLORS = [
@@ -367,7 +367,7 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
   </div>
 </div>
 <script>
-const VALUES=["Compromiso","Dedicación","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Visión","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Confianza","Esperanza"];
+const VALUES=["Compromiso","Solidaridad","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Tolerancia","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Justicia y equidad","Esperanza"];
 const BALL_COLORS=["#e53935","#e67e22","#d4ac0d","#27ae60","#1e88e5","#8e44ad","#c62828","#ef6c00","#00838f","#1565c0","#6a1b9a","#2e7d32","#ad1457","#00695c","#bf360c","#4527a0","#558b2f","#c62828","#0277bd","#6d4c41","#37474f","#00695c","#7b1fa2","#c2185b"];
 let calledValues=[],isSpinning=false,drumAngle=0,lastT=0,winners=[];
 const FLOAT_BALLS=VALUES.map((v,i)=>({v,color:BALL_COLORS[i%BALL_COLORS.length],x:0,y:0,vx:(Math.random()-.5)*1.2,vy:(Math.random()-.5)*1.2}));
@@ -698,7 +698,7 @@ header{
 </div>
 
 <script>
-const VALUES=["Compromiso","Dedicación","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Visión","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Confianza","Esperanza"];
+const VALUES=["Compromiso","Solidaridad","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Tolerancia","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Justicia y equidad","Esperanza"];
 const BALL_COLORS=["#e53935","#e67e22","#d4ac0d","#27ae60","#1e88e5","#8e44ad","#c62828","#ef6c00","#00838f","#1565c0","#6a1b9a","#2e7d32","#ad1457","#00695c","#bf360c","#4527a0","#558b2f","#c62828","#0277bd","#6d4c41","#37474f","#00695c","#7b1fa2","#c2185b"];
 
 let calledValues=[],isSpinning=false,drumAngle=0,lastT=0;
@@ -1143,7 +1143,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f2f7;color:#1a1a3e;m
 </div>
 
 <script>
-const VALUES=["Compromiso","Dedicación","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Visión","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Confianza","Esperanza"];
+const VALUES=["Compromiso","Solidaridad","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Tolerancia","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Justicia y equidad","Esperanza"];
 const BALL_COLORS=["#e53935","#e67e22","#d4ac0d","#27ae60","#1e88e5","#8e44ad","#c62828","#ef6c00","#00838f","#1565c0","#6a1b9a","#2e7d32","#ad1457","#00695c","#bf360c","#4527a0","#558b2f","#c62828","#0277bd","#6d4c41","#37474f","#00695c","#7b1fa2","#c2185b"];
 
 let board=[],marks=[],playerName='',ws,joined=false;
