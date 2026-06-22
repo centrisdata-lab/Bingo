@@ -17,9 +17,10 @@ const state = {
 let wsCounter = 0;
 
 app.use(express.json());
-app.get('/',       (_req, res) => res.send(HTML_PRESENTER));
-app.get('/jugar',  (_req, res) => res.send(HTML_PLAYER));
-app.get('/admin',  (_req, res) => res.send(HTML_ADMIN));
+app.get('/',            (_req, res) => res.send(HTML_BALOTERA));
+app.get('/presentador', (_req, res) => res.send(HTML_PRESENTER));
+app.get('/jugar',       (_req, res) => res.send(HTML_PLAYER));
+app.get('/admin',       (_req, res) => res.send(HTML_ADMIN));
 
 const send  = (ws, d)   => ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(d));
 const bcast = (d, skip) => wss.clients.forEach(c => c._id !== skip && send(c, d));
@@ -166,6 +167,228 @@ function hasBingo(marks) {
     [0,4,8],[2,4,6],
   ].some(l => l.every(i => m[i]));
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  VISTA BALOTERA STANDALONE (ruta /)
+// ═══════════════════════════════════════════════════════════════════════════════
+const HTML_BALOTERA = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Balotera Socioemocional · 27 Jun 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:#f0f2f7;color:#1a1a3e}
+header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.logo-area{display:flex;align-items:center;gap:14px}
+.logo-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#0d1b6e,#1560bd);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 8px rgba(13,27,110,.3);}
+.logo-text h1{font-size:19px;font-weight:800;color:#0d1b6e;letter-spacing:-.3px}
+.logo-text p{font-size:12px;color:#999;font-weight:500;margin-top:2px}
+.logo-text p span{color:#1560bd;font-weight:700}
+.header-btns{display:flex;align-items:center;gap:10px}
+.btn-hdr{padding:9px 20px;border-radius:9px;border:1.5px solid #e0e5f0;background:#fff;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px;}
+.btn-hdr:hover{background:#f5f7fa;border-color:#c5ccd8}
+.main{height:calc(100vh - 64px);display:grid;grid-template-columns:1fr 340px;overflow:hidden;}
+.left{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:10px 20px;overflow:hidden;background:#f0f2f7;gap:8px;}
+#bombo-canvas{display:block;max-width:100%;flex-shrink:1}
+.output-row{display:flex;align-items:center;gap:12px;flex-shrink:0;width:100%;justify-content:center}
+.val-card{background:#fff;border-radius:14px;border-left:5px solid #f5c200;padding:12px 22px;min-width:220px;box-shadow:0 2px 12px rgba(0,0,0,.08);flex-shrink:0;}
+.vc-label{font-size:9px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#f5c200;margin-bottom:5px}
+.vc-val{font-size:clamp(18px,2.2vw,28px);font-weight:900;color:#0d1b6e;line-height:1.1;min-height:32px}
+.arrow-lbl{font-size:22px;color:#c5ccd8;flex-shrink:0;transition:opacity .3s}
+.stand{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
+.stand-base{width:72px;height:6px;border-radius:3px;background:linear-gradient(90deg,#7B4F1A,#A07028,#7B4F1A)}
+.stand-pole{width:5px;height:16px;background:linear-gradient(90deg,#7B4F1A,#C4922A,#7B4F1A);border-radius:2px}
+.ball-slot{width:66px;height:66px;border-radius:50%;border:2px dashed #d0d8e8;display:flex;align-items:center;justify-content:center;background:#e8ecf5;overflow:hidden}
+.ball-slot.has-ball{border-color:transparent;background:transparent}
+#stand-ball{width:62px;height:62px;border-radius:50%;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5px;font-weight:900;font-size:9px;line-height:1.2;color:#fff;word-break:break-word;box-shadow:inset -4px -4px 9px rgba(0,0,0,.22),inset 2px 2px 5px rgba(255,255,255,.22),0 4px 12px rgba(0,0,0,.2);transform:scale(0);transition:transform .45s cubic-bezier(.34,1.56,.64,1);}
+#stand-ball.show{display:flex;transform:scale(1)}
+.stand-lbl{font-size:8px;color:#aaa;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.chips-row{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;width:100%;max-height:54px;overflow-y:auto;flex-shrink:0}
+.chip{padding:3px 11px;border-radius:20px;font-size:10px;font-weight:700;background:#fff;border:1.5px solid #d0d8ee;color:#555}
+.chip.latest{background:#f5c200;border-color:#e6b800;color:#0d1b6e}
+.btn-spin{background:linear-gradient(135deg,#0d1b6e,#1560bd);color:#fff;border:none;border-radius:10px;padding:12px 40px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;flex-shrink:0;box-shadow:0 4px 14px rgba(21,96,189,.35);display:flex;align-items:center;gap:8px;letter-spacing:.2px;}
+.btn-spin:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(21,96,189,.4)}
+.btn-spin:disabled{opacity:.38;cursor:default;transform:none}
+.side{background:#fff;border-left:1px solid #e4e8f0;display:flex;flex-direction:column;overflow:hidden}
+.side-section{padding:16px 18px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #edf0f7}
+.side-section:last-child{border-bottom:none}
+.sec-title{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#1560bd;display:flex;align-items:center;gap:8px}
+.sec-title::before{content:'';display:inline-block;width:4px;height:14px;background:#f5c200;border-radius:2px}
+.hist-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;max-height:200px}
+.hb-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;border-left:3px solid transparent}
+.hb-row.latest{background:#f5f8ff;border-left-color:#1560bd}
+.hb-dot{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;box-shadow:inset -2px -2px 4px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.15)}
+.hb-info{display:flex;flex-direction:column;gap:2px}
+.hb-name{font-size:14px;font-weight:700;color:#1a1a3e}
+.hb-row.latest .hb-name{color:#0d1b6e;font-size:15px}
+.hb-badge{font-size:9px;font-weight:700;color:#1560bd;background:#e8f0fe;padding:2px 8px;border-radius:10px;align-self:flex-start}
+.count-bar{display:flex;align-items:center;justify-content:space-between;background:#f5f8ff;border-radius:10px;padding:10px 14px;}
+.count-num{font-size:28px;font-weight:900;color:#0d1b6e;line-height:1}
+.count-label{font-size:11px;color:#aaa;font-weight:600;margin-top:2px}
+.count-total{font-size:12px;color:#bbb;font-weight:600;align-self:flex-end}
+.progress-wrap{height:8px;background:#e8ecf5;border-radius:4px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#1560bd,#29aae1);border-radius:4px;transition:width .5s ease}
+.link-banner{background:linear-gradient(135deg,#0d1b6e,#1a2f8f);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.link-icon{font-size:20px;flex-shrink:0}
+.link-info{flex:1;min-width:0}
+.link-label{font-size:9px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:3px}
+.link-url{font-size:13px;font-weight:800;color:#f5c200;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.btn-copy{padding:7px 14px;border-radius:8px;background:rgba(245,194,0,.18);color:#f5c200;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;transition:all .18s;border:1.5px solid rgba(245,194,0,.35);}
+.btn-copy:hover{background:rgba(245,194,0,.28)}
+.btn-copy.copied{background:rgba(39,174,96,.25);color:#4ade80;border-color:rgba(39,174,96,.4)}
+#val-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(13,27,110,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;gap:20px;cursor:pointer;}
+#val-overlay.show{display:flex}
+.ov-ball{width:clamp(160px,22vw,220px);height:clamp(160px,22vw,220px);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;font-weight:900;color:#fff;box-shadow:inset -12px -12px 24px rgba(0,0,0,.25),inset 6px 6px 14px rgba(255,255,255,.22),0 12px 40px rgba(0,0,0,.4);animation:ballIn .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes ballIn{from{transform:scale(0) translateY(-40px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.ov-val-text{font-size:clamp(24px,4vw,38px);line-height:1.15;word-break:break-word}
+.ov-title{font-size:clamp(13px,1.5vw,18px);color:rgba(255,255,255,.7);font-weight:600;letter-spacing:.5px}
+.ov-hint{font-size:13px;color:rgba(255,255,255,.45);font-weight:500;margin-top:8px}
+.ov-close{padding:10px 28px;border-radius:10px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;}
+.ov-close:hover{background:rgba(255,255,255,.22)}
+#winner-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(240,242,247,.96);backdrop-filter:blur(10px);flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#winner-overlay.show{display:flex}
+.w-emoji{font-size:80px;animation:pop .4s ease}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.w-title{font-size:clamp(44px,7vw,72px);font-weight:900;color:#f5c200;text-shadow:0 3px 0 #b8960a;letter-spacing:-1px}
+.w-winner-name{font-size:clamp(22px,3.5vw,40px);font-weight:800;color:#0d1b6e}
+.w-sub{font-size:14px;color:#777;font-weight:500}
+.btn-cont{padding:11px 30px;border-radius:10px;border:none;background:linear-gradient(135deg,#0d1b6e,#1560bd);color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;margin-top:4px;}
+#confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:400}
+#bingo-modal{display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+#bingo-modal.show{display:flex}
+.modal-box{background:#fff;border-radius:18px;padding:28px 32px;max-width:400px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.2);display:flex;flex-direction:column;gap:14px}
+.modal-title{font-size:18px;font-weight:900;color:#0d1b6e}
+.modal-sub{font-size:13px;color:#888;font-weight:500}
+.modal-input{width:100%;padding:12px 16px;border-radius:10px;border:2px solid #e0e5f0;font-family:inherit;font-size:15px;font-weight:700;color:#1a1a3e;outline:none;transition:border-color .2s}
+.modal-input:focus{border-color:#1560bd}
+.modal-btns{display:flex;gap:10px}
+.modal-btn{flex:1;padding:12px;border-radius:10px;border:none;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.modal-btn.confirm{background:linear-gradient(135deg,#0d1b6e,#1560bd);color:#fff;}
+.modal-btn.cancel{background:#f0f2f7;color:#666;border:1.5px solid #e0e5f0}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div id="val-overlay" onclick="closeValOverlay()">
+  <div class="ov-title">¡VALOR EN JUEGO!</div>
+  <div class="ov-ball" id="ov-ball"><div class="ov-val-text" id="ov-val-text">—</div></div>
+  <div class="ov-hint">Toca en cualquier lugar para cerrar</div>
+  <button class="ov-close" onclick="closeValOverlay()">Continuar →</button>
+</div>
+<div id="winner-overlay">
+  <div class="w-emoji">🎉</div>
+  <div class="w-title">¡BINGO!</div>
+  <div class="w-winner-name" id="w-winner-name">¡Alguien ganó!</div>
+  <div class="w-sub">Pídele que comparta algo sobre sí mismo</div>
+  <button class="btn-cont" onclick="document.getElementById('winner-overlay').classList.remove('show')">Continuar →</button>
+</div>
+<div id="bingo-modal">
+  <div class="modal-box">
+    <div class="modal-title">🏆 ¿Quién gritó BINGO?</div>
+    <div class="modal-sub">Escribe el nombre del participante ganador</div>
+    <input class="modal-input" id="bingo-name-input" type="text" placeholder="Nombre del ganador..." maxlength="40"/>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="document.getElementById('bingo-modal').classList.remove('show')">Cancelar</button>
+      <button class="modal-btn confirm" onclick="confirmBingo()">¡Celebrar! 🎉</button>
+    </div>
+  </div>
+</div>
+<header>
+  <div class="logo-area">
+    <div class="logo-icon">🎱</div>
+    <div class="logo-text">
+      <h1>Balotera Socioemocional</h1>
+      <p>Reunión Equipos Zonales · <span>27 Jun 2026</span></p>
+    </div>
+  </div>
+  <div class="header-btns">
+    <button class="btn-hdr" onclick="document.getElementById('bingo-modal').classList.add('show');setTimeout(()=>document.getElementById('bingo-name-input').focus(),100)">🏆 Registrar BINGO</button>
+    <button class="btn-hdr" onclick="resetGame()">↺ Reiniciar</button>
+  </div>
+</header>
+<div class="main">
+  <div class="left">
+    <canvas id="bombo-canvas"></canvas>
+    <div class="output-row">
+      <div class="val-card">
+        <div class="vc-label">● Valor en juego</div>
+        <div class="vc-val" id="cur-val">¡Gira la balotera!</div>
+      </div>
+      <div class="arrow-lbl" id="arrow-out" style="opacity:0">→</div>
+      <div class="stand">
+        <div class="ball-slot" id="ball-slot"><div id="stand-ball"></div></div>
+        <div class="stand-pole"></div>
+        <div class="stand-base"></div>
+        <div class="stand-lbl">SALIÓ</div>
+      </div>
+    </div>
+    <button class="btn-spin" id="btn-spin" onclick="spin()">🎱 Girar la balotera</button>
+    <div class="chips-row" id="called-wrap"></div>
+  </div>
+  <div class="side">
+    <div class="side-section" style="flex:0 0 auto">
+      <div class="sec-title">Progreso</div>
+      <div class="count-bar">
+        <div><div class="count-num" id="count-num">0</div><div class="count-label">valores llamados</div></div>
+        <div class="count-total">de 24</div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    </div>
+    <div class="side-section" style="flex:0 0 auto">
+      <div class="sec-title">Últimas bolas</div>
+      <div class="hist-list" id="hist-list"><span style="font-size:12px;color:#ccc;font-weight:500">Ninguna aún — gira la balotera</span></div>
+    </div>
+    <div class="side-section" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+      <div class="sec-title">Ganadores</div>
+      <div id="winners-list" style="display:flex;flex-direction:column;gap:5px;overflow-y:auto;flex:1">
+        <span style="font-size:12px;color:#ccc;font-weight:500">Nadie ha ganado aún</span>
+      </div>
+    </div>
+    <div class="side-section" style="flex:0 0 auto">
+      <div class="sec-title">Enlace para jugadores</div>
+      <div class="link-banner">
+        <div class="link-icon">📱</div>
+        <div class="link-info">
+          <div class="link-label">Tablero de cada participante</div>
+          <div class="link-url">https://bingo-m31a.onrender.com/jugar</div>
+        </div>
+        <button class="btn-copy" id="btn-copy" onclick="navigator.clipboard.writeText('https://bingo-m31a.onrender.com/jugar').then(()=>{this.textContent='¡Copiado!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copiar';this.classList.remove('copied')},2000)})">Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const VALUES=["Compromiso","Dedicación","Lealtad","Constancia","Perseverancia","Resiliencia","Fortaleza","Superación","Responsabilidad","Integridad","Puntualidad","Honestidad","Liderazgo","Inspiración","Servicio","Visión","Empatía","Gratitud","Colaboración","Creatividad","Respeto","Comunicación","Confianza","Esperanza"];
+const BALL_COLORS=["#e53935","#e67e22","#d4ac0d","#27ae60","#1e88e5","#8e44ad","#c62828","#ef6c00","#00838f","#1565c0","#6a1b9a","#2e7d32","#ad1457","#00695c","#bf360c","#4527a0","#558b2f","#c62828","#0277bd","#6d4c41","#37474f","#00695c","#7b1fa2","#c2185b"];
+let calledValues=[],isSpinning=false,drumAngle=0,lastT=0,winners=[];
+const FLOAT_BALLS=VALUES.map((v,i)=>({v,color:BALL_COLORS[i%BALL_COLORS.length],x:0,y:0,vx:(Math.random()-.5)*1.2,vy:(Math.random()-.5)*1.2}));
+const BC=document.getElementById('bombo-canvas');
+const bctx=BC.getContext('2d');
+function resizeCanvas(){const panel=BC.parentElement;const availH=Math.max(100,panel.clientHeight-190);const availW=panel.clientWidth-32;const W=Math.min(availW,availH/0.60,520);const H=Math.round(W*0.60);BC.width=W;BC.height=H;FLOAT_BALLS.forEach(b=>{b.x=W*0.43+(Math.random()-.5)*W*.20;b.y=H*.50+(Math.random()-.5)*H*.20;});}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+function drawScene(ts){const W=BC.width,H=BC.height;bctx.clearRect(0,0,W,H);const cx=W*.43,cy=H*.50,rx=W*.31,ry=H*.42;[cx-rx*.68,cx+rx*.68].forEach(lx=>{bctx.fillStyle='#6B3D14';bctx.fillRect(lx-7,cy+ry*.58,14,H*.20);bctx.fillStyle='#4A2A0A';bctx.fillRect(lx-13,cy+ry*.58+H*.20-4,26,8);});bctx.strokeStyle='#A0622A';bctx.lineWidth=6;bctx.beginPath();bctx.moveTo(cx-rx*.84,cy);bctx.lineTo(cx+rx*.90,cy);bctx.stroke();const mX=cx+rx*.90,mY=cy;bctx.strokeStyle='#C4922A';bctx.lineWidth=4;bctx.beginPath();bctx.moveTo(mX,mY);bctx.lineTo(mX+18,mY);bctx.stroke();const ca=ts*3;bctx.beginPath();bctx.moveTo(mX+18,mY);bctx.lineTo(mX+18+Math.cos(ca)*12,mY+Math.sin(ca)*12);bctx.strokeStyle='#8B5A1A';bctx.lineWidth=3.5;bctx.stroke();bctx.beginPath();bctx.arc(mX+18+Math.cos(ca)*12,mY+Math.sin(ca)*12,4,0,Math.PI*2);bctx.fillStyle='#6B3D14';bctx.fill();bctx.save();bctx.beginPath();bctx.ellipse(cx,cy,rx*.90,ry*.88,0,0,Math.PI*2);bctx.clip();const bg=bctx.createRadialGradient(cx-rx*.2,cy-ry*.2,6,cx,cy,rx);bg.addColorStop(0,'rgba(230,240,255,0.98)');bg.addColorStop(1,'rgba(200,222,255,0.95)');bctx.fillStyle=bg;bctx.fill();bctx.save();bctx.translate(cx,cy);bctx.rotate(drumAngle);for(let i=0;i<8;i++){const a=i*Math.PI/4;bctx.strokeStyle='rgba(139,90,20,.40)';bctx.lineWidth=2.5;bctx.beginPath();bctx.moveTo(Math.cos(a)*rx*.14,Math.sin(a)*ry*.14);bctx.lineTo(Math.cos(a)*rx*.86,Math.sin(a)*ry*.86);bctx.stroke();}bctx.restore();const ballR=Math.min(rx,ry)*.108;FLOAT_BALLS.forEach(b=>{if(calledValues.includes(b.v))return;b.x+=b.vx;b.y+=b.vy;const dx=(b.x-cx)/rx,dy=(b.y-cy)/ry;if(dx*dx+dy*dy>.58){b.vx*=-.88;b.vy*=-.88;b.x=cx+(b.x-cx)*.94;b.y=cy+(b.y-cy)*.94;}if(!isSpinning){if(Math.abs(b.vx)<.22)b.vx+=(Math.random()-.5)*.045;if(Math.abs(b.vy)<.22)b.vy+=(Math.random()-.5)*.045;}const g=bctx.createRadialGradient(b.x-ballR*.3,b.y-ballR*.3,1,b.x,b.y,ballR);g.addColorStop(0,'rgba(255,255,255,.58)');g.addColorStop(1,b.color);bctx.beginPath();bctx.arc(b.x,b.y,ballR,0,Math.PI*2);bctx.fillStyle=g;bctx.fill();bctx.strokeStyle='rgba(0,0,0,.08)';bctx.lineWidth=1;bctx.stroke();const fs=Math.max(5.5,ballR*.46);bctx.font='800 '+fs+'px Inter,sans-serif';bctx.textAlign='center';bctx.textBaseline='middle';bctx.fillStyle='#fff';bctx.shadowColor='rgba(0,0,0,.4)';bctx.shadowBlur=2;const words=b.v.split(' ');if(words.length===1||b.v.length<=7)bctx.fillText(b.v.length>8?b.v.slice(0,8):b.v,b.x,b.y);else{bctx.fillText(words[0].slice(0,8),b.x,b.y-fs*.62);bctx.fillText(words[1].slice(0,8),b.x,b.y+fs*.62);}bctx.shadowBlur=0;});bctx.restore();const frame=bctx.createLinearGradient(cx-rx,cy-ry,cx+rx,cy+ry);frame.addColorStop(0,'#C4922A');frame.addColorStop(.5,'#F5C200');frame.addColorStop(1,'#8B5A2B');bctx.strokeStyle=frame;bctx.lineWidth=13;bctx.beginPath();bctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);bctx.stroke();bctx.strokeStyle='rgba(255,255,255,.38)';bctx.lineWidth=3.5;bctx.beginPath();bctx.ellipse(cx,cy-ry*.08,rx*.66,ry*.20,-0.5,Math.PI*1.18,Math.PI*1.88);bctx.stroke();bctx.beginPath();bctx.arc(cx,cy,7,0,Math.PI*2);bctx.fillStyle='#6B3D14';bctx.fill();bctx.strokeStyle='#F5C200';bctx.lineWidth=2;bctx.stroke();const tX=cx+rx+1,tY=cy,tW=W*.085,tH=ry*.28;const tg=bctx.createLinearGradient(tX,tY-tH,tX,tY+tH);tg.addColorStop(0,'#C4922A');tg.addColorStop(1,'#8B5A2B');bctx.fillStyle=tg;bctx.beginPath();bctx.roundRect(tX,tY-tH/2,tW,tH,4);bctx.fill();bctx.strokeStyle='#6B3D14';bctx.lineWidth=1.5;bctx.stroke();}
+function animFlyBall(color,value,onDone){const W=BC.width,H=BC.height,cx=W*.43,cy=H*.50,rx=W*.31;const sX=cx+rx+W*.02,sY=cy,eX=sX+W*.10;const ballR=Math.min(W,H)*.075;let t=0;function frame(){t+=.045;const p=Math.min(t,1);const px=sX+(eX-sX)*p,py=sY-Math.sin(p*Math.PI)*H*.09;bctx.save();const g=bctx.createRadialGradient(px-ballR*.3,py-ballR*.3,1,px,py,ballR);g.addColorStop(0,'rgba(255,255,255,.52)');g.addColorStop(1,color);bctx.beginPath();bctx.arc(px,py,ballR,0,Math.PI*2);bctx.fillStyle=g;bctx.fill();bctx.strokeStyle='rgba(0,0,0,.10)';bctx.lineWidth=1.5;bctx.stroke();bctx.fillStyle='#fff';const fs=Math.max(7,ballR*.40);bctx.font='800 '+fs+'px Inter,sans-serif';bctx.textAlign='center';bctx.textBaseline='middle';bctx.shadowColor='rgba(0,0,0,.4)';bctx.shadowBlur=2;const words=value.split(' ');if(words.length===1||value.length<=7)bctx.fillText(value.slice(0,8),px,py);else{bctx.fillText(words[0].slice(0,8),px,py-fs*.58);bctx.fillText(words[1].slice(0,8),px,py+fs*.58);}bctx.shadowBlur=0;bctx.restore();if(t<1)requestAnimationFrame(frame);else onDone&&onDone();}requestAnimationFrame(frame);}
+function mainLoop(ts){const dt=(ts-lastT)/1000;lastT=ts;drumAngle+=isSpinning?dt*4.6:dt*.32;drawScene(ts/1000);requestAnimationFrame(mainLoop);}
+requestAnimationFrame(mainLoop);
+function showStandBall(value,color){const sb=document.getElementById('stand-ball');sb.classList.remove('show');sb.style.background='radial-gradient(circle at 35% 35%,rgba(255,255,255,.45),'+color+')';const words=value.split(' ');sb.innerHTML=words.map(w=>'<span style="display:block;font-size:'+(words.length>1?'7.5px':'9.5px')+';line-height:1.25;font-weight:900">'+esc(w)+'</span>').join('');document.getElementById('ball-slot').classList.add('has-ball');document.getElementById('arrow-out').style.opacity='1';setTimeout(()=>sb.classList.add('show'),60);}
+function spin(){if(isSpinning)return;const left=VALUES.filter(v=>!calledValues.includes(v));if(!left.length){alert('¡Ya salieron todos los valores!');return;}isSpinning=true;document.getElementById('btn-spin').disabled=true;setTimeout(()=>{const val=left[Math.floor(Math.random()*left.length)];calledValues.push(val);isSpinning=false;document.getElementById('cur-val').textContent=val;document.getElementById('count-num').textContent=calledValues.length;document.getElementById('progress-bar').style.width=(calledValues.length/24*100)+'%';renderChips();renderHistList();const idx=VALUES.indexOf(val);const color=BALL_COLORS[idx%BALL_COLORS.length];animFlyBall(color,val,()=>{showStandBall(val,color);showValOverlay(val,color);});document.getElementById('btn-spin').disabled=false;},4000);}
+function showValOverlay(value,color){const ball=document.getElementById('ov-ball');ball.style.background='radial-gradient(circle at 35% 35%,rgba(255,255,255,.38),'+color+')';ball.style.boxShadow='inset -12px -12px 24px rgba(0,0,0,.25),inset 6px 6px 14px rgba(255,255,255,.18),0 12px 40px '+color+'88';document.getElementById('ov-val-text').textContent=value;document.getElementById('val-overlay').classList.add('show');}
+function closeValOverlay(){document.getElementById('val-overlay').classList.remove('show');}
+function renderChips(){const latest=calledValues[calledValues.length-1];document.getElementById('called-wrap').innerHTML=calledValues.map(v=>'<span class="chip'+(v===latest?' latest':'')+'">'+esc(v)+'</span>').join('');}
+function renderHistList(){const el=document.getElementById('hist-list');if(!calledValues.length){el.innerHTML='<span style="font-size:12px;color:#ccc;font-weight:500">Ninguna aún — gira la balotera</span>';return;}const rev=[...calledValues].reverse().slice(0,8);el.innerHTML=rev.map((v,i)=>{const idx=VALUES.indexOf(v);const col=BALL_COLORS[idx%BALL_COLORS.length];return '<div class="hb-row'+(i===0?' latest':'')+'"><div class="hb-dot" style="background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.45),'+col+')">'+v.slice(0,3).toUpperCase()+'</div><div class="hb-info"><span class="hb-name">'+esc(v)+'</span>'+(i===0?'<span class="hb-badge">● Actual</span>':'')+'</div></div>';}).join('');}
+function renderWinners(){const el=document.getElementById('winners-list');if(!winners.length){el.innerHTML='<span style="font-size:12px;color:#ccc;font-weight:500">Nadie ha ganado aún</span>';return;}el.innerHTML=winners.map(w=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:#f0fdf4;border-left:3px solid #27ae60;font-size:13px;font-weight:700;color:#1a1a3e"><span style="font-size:16px">🏆</span> '+esc(w)+'</div>').join('');}
+function confirmBingo(){const name=document.getElementById('bingo-name-input').value.trim()||'Un participante';document.getElementById('bingo-modal').classList.remove('show');winners.push(name);renderWinners();document.getElementById('w-winner-name').textContent=name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();}
+document.getElementById('bingo-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')confirmBingo();if(e.key==='Escape')document.getElementById('bingo-modal').classList.remove('show');});
+function resetGame(){if(!confirm('¿Reiniciar el juego? Se borrará el progreso.'))return;calledValues=[];winners=[];document.getElementById('cur-val').textContent='¡Gira la balotera!';document.getElementById('called-wrap').innerHTML='';document.getElementById('count-num').textContent='0';document.getElementById('progress-bar').style.width='0%';document.getElementById('stand-ball').classList.remove('show');document.getElementById('ball-slot').classList.remove('has-ball');document.getElementById('arrow-out').style.opacity='0';renderHistList();renderWinners();FLOAT_BALLS.forEach(b=>{b.vx=(Math.random()-.5)*1.2;b.vy=(Math.random()-.5)*1.2;});}
+const cc=document.getElementById('confetti-canvas');const ccx=cc.getContext('2d');
+function launchConfetti(){cc.width=innerWidth;cc.height=innerHeight;const ps=Array.from({length:200},()=>({x:Math.random()*cc.width,y:-10,w:7+Math.random()*9,h:3+Math.random()*5,color:['#f5c200','#1e88e5','#0d1b6e','#27ae60','#e53935','#8e44ad'][Math.floor(Math.random()*6)],speed:2.5+Math.random()*4,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.18,drift:(Math.random()-.5)*2}));(function loop(){ccx.clearRect(0,0,cc.width,cc.height);const r=ps.filter(p=>p.y<cc.height+20);r.forEach(p=>{p.y+=p.speed;p.x+=p.drift;p.angle+=p.spin;ccx.save();ccx.translate(p.x,p.y);ccx.rotate(p.angle);ccx.fillStyle=p.color;ccx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ccx.restore();});if(r.length)requestAnimationFrame(loop);else ccx.clearRect(0,0,cc.width,cc.height);})();}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>`;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  VISTA PRESENTADOR
