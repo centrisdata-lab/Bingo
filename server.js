@@ -70,10 +70,18 @@ wss.on('connection', ws => {
         p.marks[msg.idx] = !p.marks[msg.idx];
         send(ws, { type: 'marks', marks: p.marks });
         if (!p.bingo && hasBingo(p.marks)) {
-          p.bingo = true;
-          state.winners.push(p.name);
-          bcast({ type: 'bingo_winner', name: p.name, winners: state.winners });
-          bcast(publicState());
+          // Verificar que todos los valores marcados hayan salido en la balotera
+          const unmarked = p.board
+            .filter((v, i) => i !== 4 && p.marks[i] && !state.calledValues.includes(v));
+          if (unmarked.length > 0) {
+            // Hay valores marcados que aún no han salido — rechazar
+            send(ws, { type: 'bingo_invalid', pending: unmarked });
+          } else {
+            p.bingo = true;
+            state.winners.push(p.name);
+            bcast({ type: 'bingo_winner', name: p.name, winners: state.winners });
+            bcast(publicState());
+          }
         }
         break;
       }
@@ -160,12 +168,9 @@ function genBoard() {
   return b;
 }
 function hasBingo(marks) {
+  // Tablero completo: las 9 celdas marcadas (índice 4 = LIBRE, siempre true)
   const m = [...marks]; m[4] = true;
-  return [
-    [0,1,2],[3,4,5],[6,7,8],
-    [0,3,6],[1,4,7],[2,5,8],
-    [0,4,8],[2,4,6],
-  ].some(l => l.every(i => m[i]));
+  return m.every(Boolean);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1166,6 +1171,12 @@ function connect(){
       document.getElementById('called-chips').innerHTML=m.calledValues.map(v=>'<span class="chip">'+esc(v)+'</span>').join('');
     }
     if(m.type==='bingo_winner')document.getElementById('bingo-msg').textContent='🏆 ¡'+esc(m.name)+' ganó!';
+    if(m.type==='bingo_invalid'){
+      const msg=document.getElementById('bingo-msg');
+      msg.style.color='#e53935';
+      msg.textContent='⏳ Aún falta: '+m.pending.map(v=>esc(v)).join(', ');
+      setTimeout(()=>{msg.style.color='';if(msg.textContent.includes('falta'))msg.textContent='';},5000);
+    }
   };
 }
 
@@ -1196,18 +1207,17 @@ function register(){
   if(ws&&ws.readyState===WebSocket.OPEN){ws.send(JSON.stringify({type:'register',name:playerName}));joined=true;}
 }
 function renderBoard(){
-  const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
   const m=[...marks];m[4]=true;
-  const winning=new Set();
-  LINES.filter(l=>l.every(i=>m[i])).forEach(l=>l.forEach(i=>winning.add(i)));
+  const allMarked=m.every(Boolean);
   document.getElementById('board').innerHTML=board.map((v,i)=>{
     if(v==='LIBRE')return '<div class="cell free">⭐ LIBRE</div>';
-    const cls='cell'+(marks[i]?' marked':'')+(winning.has(i)?' winning':'');
+    const cls='cell'+(marks[i]?' marked':'')+(allMarked?' winning':'');
     const fs=v.length>12?'clamp(7px,2.4vw,10px)':v.length>8?'clamp(8px,2.8vw,12px)':'clamp(9px,3.2vw,13px)';
     return '<div class="'+cls+'" onclick="mark('+i+')" style="font-size:'+fs+'">'+esc(v)+'</div>';
   }).join('');
-  if(winning.size>0&&!document.getElementById('bingo-msg').textContent.includes('ganó'))
-    document.getElementById('bingo-msg').textContent='¡Línea completa! Grita BINGO 🎉';
+  const msg=document.getElementById('bingo-msg');
+  if(allMarked&&!msg.textContent.includes('ganó')&&!msg.textContent.includes('falta'))
+    msg.textContent='¡Tablero completo! Grita BINGO 🎉';
 }
 function mark(idx){if(!ws||ws.readyState!==WebSocket.OPEN)return;ws.send(JSON.stringify({type:'mark',idx}));}
 function applyState(s){
