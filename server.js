@@ -236,14 +236,14 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
 .count-total{font-size:12px;color:#bbb;font-weight:600;align-self:flex-end}
 .progress-wrap{height:8px;background:#e8ecf5;border-radius:4px;overflow:hidden}
 .progress-bar{height:100%;background:linear-gradient(90deg,#1560bd,#29aae1);border-radius:4px;transition:width .5s ease}
-.link-banner{background:linear-gradient(135deg,#0d1b6e,#1a2f8f);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.link-banner{background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;border:1.5px solid #e0e5f0;box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .link-icon{font-size:20px;flex-shrink:0}
 .link-info{flex:1;min-width:0}
-.link-label{font-size:9px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:3px}
-.link-url{font-size:13px;font-weight:800;color:#f5c200;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.btn-copy{padding:7px 14px;border-radius:8px;background:rgba(245,194,0,.18);color:#f5c200;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;transition:all .18s;border:1.5px solid rgba(245,194,0,.35);}
-.btn-copy:hover{background:rgba(245,194,0,.28)}
-.btn-copy.copied{background:rgba(39,174,96,.25);color:#4ade80;border-color:rgba(39,174,96,.4)}
+.link-label{font-size:9px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#aaa;margin-bottom:3px}
+.link-url{font-size:12px;font-weight:800;color:#1560bd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.btn-copy{padding:7px 14px;border-radius:8px;background:#e8f0fe;color:#1560bd;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;transition:all .18s;border:1.5px solid #c5d8ff;}
+.btn-copy:hover{background:#d0e2fd}
+.btn-copy.copied{background:rgba(39,174,96,.12);color:#27ae60;border-color:rgba(39,174,96,.3)}
 #val-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(13,27,110,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;gap:20px;cursor:pointer;}
 #val-overlay.show{display:flex}
 .ov-ball{width:clamp(160px,22vw,220px);height:clamp(160px,22vw,220px);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;font-weight:900;color:#fff;box-shadow:inset -12px -12px 24px rgba(0,0,0,.25),inset 6px 6px 14px rgba(255,255,255,.22),0 12px 40px rgba(0,0,0,.4);animation:ballIn .5s cubic-bezier(.34,1.56,.64,1);}
