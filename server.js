@@ -342,8 +342,14 @@ header{height:64px;background:#fff;border-bottom:4px solid #f5c200;padding:0 28p
       <div class="hist-list" id="hist-list"><span style="font-size:12px;color:#ccc;font-weight:500">Ninguna aún — gira la balotera</span></div>
     </div>
     <div class="side-section" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+      <div class="sec-title">Participantes <span id="player-count" style="background:#e8f0fe;color:#1560bd;border-radius:20px;padding:1px 9px;font-size:10px;font-weight:800;margin-left:4px">0</span></div>
+      <div id="players-list" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto;flex:1">
+        <span style="font-size:12px;color:#ccc;font-weight:500">Esperando participantes...</span>
+      </div>
+    </div>
+    <div class="side-section" style="flex:0 0 auto;max-height:120px;overflow-y:auto">
       <div class="sec-title">Ganadores</div>
-      <div id="winners-list" style="display:flex;flex-direction:column;gap:5px;overflow-y:auto;flex:1">
+      <div id="winners-list" style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:12px;color:#ccc;font-weight:500">Nadie ha ganado aún</span>
       </div>
     </div>
@@ -383,7 +389,8 @@ function renderWinners(){const el=document.getElementById('winners-list');if(!wi
 function confirmBingo(){const name=document.getElementById('bingo-name-input').value.trim()||'Un participante';document.getElementById('bingo-modal').classList.remove('show');winners.push(name);renderWinners();document.getElementById('w-winner-name').textContent=name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();}
 document.getElementById('bingo-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')confirmBingo();if(e.key==='Escape')document.getElementById('bingo-modal').classList.remove('show');});
 function resetGame(){if(!confirm('¿Reiniciar el juego? Se borrará el progreso.'))return;ws&&ws.readyState===1&&ws.send(JSON.stringify({type:'reset'}));}
-function applyServerState(s){calledValues=s.calledValues||[];winners=s.winners||[];isSpinning=!!s.spinning;document.getElementById('count-num').textContent=calledValues.length;document.getElementById('progress-bar').style.width=(calledValues.length/24*100)+'%';renderChips();renderHistList();renderWinners();if(s.currentValue){const idx=VALUES.indexOf(s.currentValue);const col=BALL_COLORS[idx%BALL_COLORS.length];document.getElementById('cur-val').textContent=s.currentValue;showStandBall(s.currentValue,col);}document.getElementById('btn-spin').disabled=isSpinning;}
+function renderPlayers(players){const el=document.getElementById('players-list');const cnt=document.getElementById('player-count');if(!players||!players.length){el.innerHTML='<span style="font-size:12px;color:#ccc;font-weight:500">Esperando participantes...</span>';cnt.textContent='0';return;}cnt.textContent=players.length;el.innerHTML=players.map(p=>{const initials=p.name.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const hue=p.name.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%360;return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:#f5f8ff;border-left:3px solid hsl('+hue+',60%,48%)">'+    '<div style="width:28px;height:28px;border-radius:50%;background:hsl('+hue+',60%,48%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff;flex-shrink:0">'+initials+'</div>'+    '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:#1a1a3e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+'</div>'+    '<div style="font-size:9px;color:#aaa;font-weight:600">'+p.markedCount+' marcados'+(p.bingo?' · 🏆 BINGO':'')+'</div></div></div>';}).join('');}
+function applyServerState(s){calledValues=s.calledValues||[];winners=s.winners||[];isSpinning=!!s.spinning;document.getElementById('count-num').textContent=calledValues.length;document.getElementById('progress-bar').style.width=(calledValues.length/24*100)+'%';renderChips();renderHistList();renderWinners();renderPlayers(s.players||[]);if(s.currentValue){const idx=VALUES.indexOf(s.currentValue);const col=BALL_COLORS[idx%BALL_COLORS.length];document.getElementById('cur-val').textContent=s.currentValue;showStandBall(s.currentValue,col);}document.getElementById('btn-spin').disabled=isSpinning;}
 const cc=document.getElementById('confetti-canvas');const ccx=cc.getContext('2d');
 function launchConfetti(){cc.width=innerWidth;cc.height=innerHeight;const ps=Array.from({length:200},()=>({x:Math.random()*cc.width,y:-10,w:7+Math.random()*9,h:3+Math.random()*5,color:['#f5c200','#1e88e5','#0d1b6e','#27ae60','#e53935','#8e44ad'][Math.floor(Math.random()*6)],speed:2.5+Math.random()*4,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.18,drift:(Math.random()-.5)*2}));(function loop(){ccx.clearRect(0,0,cc.width,cc.height);const r=ps.filter(p=>p.y<cc.height+20);r.forEach(p=>{p.y+=p.speed;p.x+=p.drift;p.angle+=p.spin;ccx.save();ccx.translate(p.x,p.y);ccx.rotate(p.angle);ccx.fillStyle=p.color;ccx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ccx.restore();});if(r.length)requestAnimationFrame(loop);else ccx.clearRect(0,0,cc.width,cc.height);})();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -407,6 +414,7 @@ function conectar(){
       document.getElementById('btn-spin').disabled=false;
     }
     else if(m.type==='bingo_winner'){winners=m.winners;renderWinners();document.getElementById('w-winner-name').textContent=m.name;document.getElementById('winner-overlay').classList.add('show');launchConfetti();}
+    else if(m.type==='player_joined'||m.type==='player_left'){/* state update follows */}
   };
   ws.onclose=()=>setTimeout(conectar,2000);
 }
